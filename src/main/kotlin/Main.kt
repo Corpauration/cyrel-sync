@@ -32,7 +32,7 @@ fun main() {
             .startNow()
             .withSchedule(
                 simpleSchedule()
-                    .withIntervalInMinutes(3)
+                    .withIntervalInHours(3)
                     .repeatForever()
             )
             .build()
