@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "fr.corpauration"
-version = "1.0-SNAPSHOT"
+version = "1.0.0"
 
 repositories {
     mavenCentral()
@@ -34,3 +34,54 @@ tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = JavaVersion.VERSION_16.toString()
 }
 
+abstract class DockeriseTask : DefaultTask() {
+
+    @Input
+    var ver: String = ""
+
+    init {
+        dependsOn("jar")
+    }
+
+    @TaskAction
+    fun dockerise() {
+        val process = ProcessBuilder("docker", "image", "build", "-t", "cyrel-sync:${ver}", ".").start()
+        process.inputStream.reader(Charsets.UTF_8).use {
+            println(it.readText())
+        }
+        while (process.isAlive) {
+
+        }
+    }
+}
+
+abstract class DeleteJarTask : DefaultTask() {
+
+    @TaskAction
+    fun deleteJar() {
+    }
+}
+
+tasks.register<DockeriseTask>("dockerise") {
+    ver = version as String
+}
+
+tasks.register<DeleteJarTask>("deleteJar") {
+    delete(fileTree("build/libs") {
+        include("**/*.jar")
+    })
+}
+
+tasks.build {
+    dependsOn("deleteJar")
+}
+
+tasks.jar {
+    manifest {
+        attributes["Main-Class"] = "MainKt"
+    }
+    configurations["compileClasspath"].forEach { file: File ->
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        from(zipTree(file.absoluteFile))
+    }
+}
