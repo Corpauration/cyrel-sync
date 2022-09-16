@@ -1,0 +1,3 @@
+[submodule "cy-celcat"]
+	path = cy-celcat
+	url = git@github.com:Corpauration/cy-celcat.git
