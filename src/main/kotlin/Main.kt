@@ -9,7 +9,7 @@ import org.quartz.TriggerBuilder.newTrigger
 import org.quartz.impl.StdSchedulerFactory
 
 
-fun main(args: Array<String>) {
+fun main() {
     Class.forName("org.postgresql.Driver")
     try {
         // Grab the Scheduler instance from the Factory

@@ -88,12 +88,10 @@ class UpdateCoursesJob : Job {
             conn.commit()
         } catch (e: SQLException) {
             LOG.error(e.toString())
-            if (conn != null) {
-                try {
-                    conn.rollback()
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
-                }
+            try {
+                conn.rollback()
+            } catch (ex: Exception) {
+                ex.printStackTrace()
             }
         }
         conn.setAutoCommit(true)
