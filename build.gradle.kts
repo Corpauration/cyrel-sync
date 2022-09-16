@@ -20,7 +20,7 @@ dependencies {
     implementation("org.quartz-scheduler:quartz:2.3.2")
     implementation(project(":cy-celcat"))
     implementation("org.postgresql:postgresql:42.5.0")
-    implementation("org.slf4j:slf4j-simple:2.0.1")
+    implementation("org.slf4j:slf4j-jdk14:2.0.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
     testImplementation(kotlin("test"))
     implementation(kotlin("reflect"))
@@ -81,7 +81,8 @@ tasks.jar {
         attributes["Main-Class"] = "MainKt"
     }
     configurations["compileClasspath"].forEach { file: File ->
-        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        println(file.name)
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
         from(zipTree(file.absoluteFile))
     }
 }
