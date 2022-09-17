@@ -7,6 +7,7 @@ import org.quartz.Trigger
 import org.quartz.TriggerBuilder.newTrigger
 
 import org.quartz.impl.StdSchedulerFactory
+import java.util.*
 
 
 fun main() {
@@ -17,32 +18,62 @@ fun main() {
 
         // and start it off
         scheduler.start()
-        // define the job and tie it to our HelloJob class
 
-        // define the job and tie it to our HelloJob class
-        val job: JobDetail = newJob(UpdateCoursesJob::class.java)
+        processSigTerm(scheduler)
+
+        val coursesJob: JobDetail = newJob(UpdateCoursesJob::class.java)
             .withIdentity("update-courses", "update-courses")
             .build()
 
-        // Trigger the job to run now, and then repeat every 40 seconds
-
-        // Trigger the job to run now, and then repeat every 40 seconds
-        val trigger: Trigger = newTrigger()
+        val date = Date()
+        date.minutes += 5
+        val coursesTrigger: Trigger = newTrigger()
             .withIdentity("update-courses-trigger", "update-courses")
             .startNow()
             .withSchedule(
                 simpleSchedule()
-                    .withIntervalInHours(3)
+                    .withIntervalInHours(2)
                     .repeatForever()
+                    .withMisfireHandlingInstructionFireNow()
             )
             .build()
 
-        // Tell quartz to schedule the job using our trigger
+        scheduler.scheduleJob(coursesJob, coursesTrigger)
 
-        // Tell quartz to schedule the job using our trigger
-        scheduler.scheduleJob(job, trigger)
+        val studentsJob: JobDetail = newJob(UpdateCytechStudentsJob::class.java)
+            .withIdentity("update-students", "update-students")
+            .build()
+
+        val studentsTrigger: Trigger = newTrigger()
+            .withIdentity("update-students-trigger", "update-students")
+            .startNow()
+            .withSchedule(
+                simpleSchedule()
+                    .withIntervalInHours(96)
+                    .repeatForever()
+                    .withMisfireHandlingInstructionFireNow()
+            )
+            .build()
+
+        scheduler.scheduleJob(studentsJob, studentsTrigger)
 //        scheduler.shutdown()
     } catch (se: SchedulerException) {
         se.printStackTrace()
     }
+}
+
+fun processSigTerm(scheduler: Scheduler) {
+    val mainThread = Thread.currentThread()
+    Runtime.getRuntime().addShutdownHook(object : Thread() {
+        override fun run() {
+            try {
+                if (scheduler.isStarted) {
+                    scheduler.shutdown(true)
+                }
+                mainThread.join()
+            } catch (ex: InterruptedException) {
+                ex.printStackTrace()
+            }
+        }
+    })
 }
