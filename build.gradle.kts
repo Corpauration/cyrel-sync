@@ -49,6 +49,9 @@ abstract class DockeriseTask : DefaultTask() {
         process.inputStream.reader(Charsets.UTF_8).use {
             println(it.readText())
         }
+        process.errorStream.reader(Charsets.UTF_8).use {
+            println(it.readText())
+        }
         while (process.isAlive) {
 
         }
