@@ -22,6 +22,11 @@ dependencies {
     implementation("org.postgresql:postgresql:42.5.0")
     implementation("org.slf4j:slf4j-jdk14:2.0.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
+    implementation("io.prometheus:simpleclient:0.16.0")
+    implementation("io.ktor:ktor-server-core:2.1.1")
+    implementation("io.ktor:ktor-server-netty:2.1.1")
+    implementation("io.ktor:ktor-server-metrics-micrometer:2.1.1")
+    implementation("io.micrometer:micrometer-registry-prometheus:1.9.2")
     testImplementation(kotlin("test"))
     implementation(kotlin("reflect"))
 }
