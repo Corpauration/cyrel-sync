@@ -66,12 +66,11 @@ fun main() {
 
         embeddedServer(Netty, port = 8080) {
             val appMicrometerRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-            val stats = PrometheusStats()
-            appMicrometerRegistry.prometheusRegistry.register(stats.schedulerStatus)
-            appMicrometerRegistry.prometheusRegistry.register(stats.activeJobs)
-            appMicrometerRegistry.prometheusRegistry.register(stats.totalRanJobs)
-            appMicrometerRegistry.prometheusRegistry.register(stats.coursesNextFireTime)
-            appMicrometerRegistry.prometheusRegistry.register(stats.studentsNextFireTime)
+            appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.schedulerStatus)
+            appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.activeJobs)
+            appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.totalRanJobs)
+            appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.coursesNextFireTime)
+            appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.studentsNextFireTime)
             install(MicrometerMetrics) {
                 registry = appMicrometerRegistry
             }
@@ -80,11 +79,11 @@ fun main() {
                     call.respondText("Hello, world!")
                 }
                 get("/metrics") {
-                    stats.updateStatus(scheduler)
-                    stats.updateActiveJobs(scheduler)
-                    stats.updateTotalRanJobs(scheduler)
-                    stats.updateCoursesNextFireTime(coursesTrigger)
-                    stats.updateStudentsNextFireTime(studentsTrigger)
+                    PrometheusStats.updateStatus(scheduler)
+                    PrometheusStats.updateActiveJobs(scheduler)
+                    PrometheusStats.updateTotalRanJobs(scheduler)
+                    PrometheusStats.updateCoursesNextFireTime(scheduler)
+                    PrometheusStats.updateStudentsNextFireTime(scheduler)
                     call.respond(appMicrometerRegistry.scrape())
                 }
             }

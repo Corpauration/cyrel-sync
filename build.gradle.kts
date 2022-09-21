@@ -23,6 +23,7 @@ dependencies {
     implementation("org.slf4j:slf4j-jdk14:2.0.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
     implementation("io.prometheus:simpleclient:0.16.0")
+    implementation("org.latencyutils:LatencyUtils:2.0.3")
     implementation("io.ktor:ktor-server-core:2.1.1")
     implementation("io.ktor:ktor-server-netty:2.1.1")
     implementation("io.ktor:ktor-server-metrics-micrometer:2.1.1")
