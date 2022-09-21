@@ -1,8 +1,8 @@
-import io.prometheus.client.Gauge
-import io.prometheus.client.Info
+import io.prometheus.client.*
 import org.quartz.Scheduler
 import org.quartz.impl.matchers.GroupMatcher
 import java.util.*
+
 
 class PrometheusStats {
     companion object {
@@ -15,6 +15,23 @@ class PrometheusStats {
             Gauge.build().name("scheduler_courses_next_fire").help("When courses fetching will be fired").register()
         val studentsNextFireTime =
             Gauge.build().name("scheduler_students_next_fire").help("When students fetching will be fired").register()
+        val coursesDuration = Histogram.build()
+            .exponentialBuckets(1.0, 1.5, 25)
+            .name("scheduler_courses_duration").help("Duration of courses task").register()
+        val studentsDuration = Histogram.build()
+            .exponentialBuckets(1.0, 1.5, 25)
+            .name("scheduler_students_duration").help("Duration of students task").register()
+        val coursesError = Counter.build()
+            .name("scheduler_courses_errors").help("Total errors of courses task.").register()
+        val studentsError = Counter.build()
+            .name("scheduler_students_errors").help("Total errors of students task.").register()
+        var coursesGroupsDuration = Summary.build()
+            .maxAgeSeconds(5 * 60)
+            .ageBuckets(10)
+            .name("scheduler_courses_groups_duration")
+            .help("Duration of a group fetch from courses task")
+            .register()
+
 
         private fun getStatus(scheduler: Scheduler): String {
             return if (scheduler.isInStandbyMode) "STANDBY"
@@ -40,7 +57,6 @@ class PrometheusStats {
                 coursesNextFireTime.set(
                     scheduler.getTrigger(it).getFireTimeAfter(Date(System.currentTimeMillis() + 1000)).time.toDouble()
                 )
-                println(scheduler.getTrigger(it).getFireTimeAfter(Date(System.currentTimeMillis() + 1000)).time)
             }
         }
 

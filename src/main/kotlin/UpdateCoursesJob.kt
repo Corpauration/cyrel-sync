@@ -19,21 +19,29 @@ class UpdateCoursesJob : Job {
     private lateinit var conn: Connection
 
     override fun execute(context: JobExecutionContext?) {
-        val url = System.getenv("JDBC_URL")
-        val props = Properties()
-        props.setProperty("user", System.getenv("DB_USERNAME"))
-        props.setProperty("password", System.getenv("DB_PASSWORD"))
-        props.setProperty("ssl", "false")
-        conn = DriverManager.getConnection(url, props)
-        LOG.info("Updating courses...")
-        val celcat = CyCelcat()
-        runBlocking {
-            celcat.login(System.getenv("CELCAT_USERNAME"), System.getenv("CELCAT_PASSWORD"))
-            getGroupReferents().map {
-                updateCourses(celcat, it.first, it.second)
+        val timer = PrometheusStats.coursesDuration.startTimer()
+        try {
+            val url = System.getenv("JDBC_URL")
+            val props = Properties()
+            props.setProperty("user", System.getenv("DB_USERNAME"))
+            props.setProperty("password", System.getenv("DB_PASSWORD"))
+            props.setProperty("ssl", "false")
+            conn = DriverManager.getConnection(url, props)
+            LOG.info("Updating courses...")
+            val celcat = CyCelcat()
+            runBlocking {
+                celcat.login(System.getenv("CELCAT_USERNAME"), System.getenv("CELCAT_PASSWORD"))
+                getGroupReferents().map {
+                    updateCourses(celcat, it.first, it.second)
+                }
             }
+            LOG.info("Done!")
+        } catch (e: Exception) {
+            timer.observeDuration()
+            PrometheusStats.coursesError.inc()
+            throw e
         }
-        LOG.info("Done!")
+        timer.observeDuration()
     }
 
     fun getGroupReferents(): List<Pair<Int, Int>> {
@@ -58,6 +66,7 @@ class UpdateCoursesJob : Job {
     }
 
     suspend fun updateCourses(celcat: CyCelcat, group: Int, referent: Int) {
+        val timer = PrometheusStats.coursesGroupsDuration.startTimer()
         LOG.info("Updating courses for group $group with referent id $referent")
         try {
             val now = LocalDate.now()
@@ -93,8 +102,11 @@ class UpdateCoursesJob : Job {
             } catch (ex: Exception) {
                 ex.printStackTrace()
             }
+            timer.observeDuration()
+            PrometheusStats.coursesError.inc()
         }
         conn.setAutoCommit(true)
+        timer.observeDuration()
     }
 
     suspend fun updateEvent(celcat: CyCelcat, course: Course) {

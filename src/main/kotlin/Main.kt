@@ -71,6 +71,11 @@ fun main() {
             appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.totalRanJobs)
             appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.coursesNextFireTime)
             appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.studentsNextFireTime)
+            appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.coursesDuration)
+            appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.studentsDuration)
+            appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.coursesError)
+            appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.studentsError)
+            appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.coursesGroupsDuration)
             install(MicrometerMetrics) {
                 registry = appMicrometerRegistry
             }

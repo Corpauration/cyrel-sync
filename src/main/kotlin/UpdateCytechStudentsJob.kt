@@ -16,37 +16,44 @@ class UpdateCytechStudentsJob : Job {
     private lateinit var conn: Connection
 
     override fun execute(context: JobExecutionContext?) {
-        val url = System.getenv("JDBC_URL")
-        val props = Properties()
-        props.setProperty("user", System.getenv("DB_USERNAME"))
-        props.setProperty("password", System.getenv("DB_PASSWORD"))
-        props.setProperty("ssl", "false")
-        conn = DriverManager.getConnection(url, props)
-        LOG.info("Updating students...")
-        val celcat = CyCelcat()
-        runBlocking {
-            celcat.login(System.getenv("CELCAT_USERNAME"), System.getenv("CELCAT_PASSWORD"))
-            val students = celcat.readAllResourceListItems(Student::class, false, "__").results
-            try {
-                conn.setAutoCommit(false)
-                deleteAll()
-                students.filter { it.dept == "D : CY TECH" }.forEach {
-                    insertStudent(it)
-                }
-                conn.commit()
-            } catch (e: SQLException) {
-                LOG.error(e.toString())
+        val timer = PrometheusStats.studentsDuration.startTimer()
+        try {
+            val url = System.getenv("JDBC_URL")
+            val props = Properties()
+            props.setProperty("user", System.getenv("DB_USERNAME"))
+            props.setProperty("password", System.getenv("DB_PASSWORD"))
+            props.setProperty("ssl", "false")
+            conn = DriverManager.getConnection(url, props)
+            LOG.info("Updating students...")
+            val celcat = CyCelcat()
+            runBlocking {
+                celcat.login(System.getenv("CELCAT_USERNAME"), System.getenv("CELCAT_PASSWORD"))
+                val students = celcat.readAllResourceListItems(Student::class, false, "__").results
                 try {
-                    conn.rollback()
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
+                    conn.setAutoCommit(false)
+                    deleteAll()
+                    students.filter { it.dept == "D : CY TECH" }.forEach {
+                        insertStudent(it)
+                    }
+                    conn.commit()
+                } catch (e: SQLException) {
+                    LOG.error(e.toString())
+                    try {
+                        conn.rollback()
+                    } catch (ex: Exception) {
+                        ex.printStackTrace()
+                    }
+                    throw e
                 }
+                conn.setAutoCommit(true)
             }
-            conn.setAutoCommit(true)
-
-
+            LOG.info("Done!")
+        } catch (e: Exception) {
+            timer.observeDuration()
+            PrometheusStats.studentsError.inc()
+            throw e
         }
-        LOG.info("Done!")
+        timer.observeDuration()
     }
 
     fun deleteAll() {
