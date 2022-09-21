@@ -119,7 +119,7 @@ class UpdateCoursesJob : Job {
             federationId = null
         )
         for (element in event.elements) {
-            if (element.label != "") svElem = element
+            if (element.label != null) svElem = element
             when (element.label) {
                 "Catégorie" -> category = when (element.content) {
                     "CM" -> CourseCategory.CM
@@ -129,7 +129,7 @@ class UpdateCoursesJob : Job {
                 "Matière" -> subject = element.content
                 "Salle" -> rooms = element.content.toString()
                 "Enseignant" -> teachers = element.content.toString()
-                "" -> when (svElem.label) {
+                null -> when (svElem.label) {
                     "Salle" -> rooms += ",${element.content}"
                     "Enseignant" -> teachers += ",${element.content}"
                 }
