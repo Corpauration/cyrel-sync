@@ -181,8 +181,8 @@ class UpdateCoursesJob : Job {
         st.setTimestamp(3, if (end != null) Timestamp.from(end.toInstant(ZoneOffset.UTC)) else null)
         st.setInt(4, category.ordinal)
         st.setString(5, subject)
-        st.setString(6, teachers)
-        st.setString(7, rooms)
+        st.setString(6, rooms)
+        st.setString(7, teachers)
         st.executeUpdate()
     }
 }
