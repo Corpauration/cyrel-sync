@@ -135,6 +135,13 @@ class UpdateCoursesJob : Job {
             when (element.label) {
                 "Catégorie" -> category = when (element.content) {
                     "CM" -> CourseCategory.CM
+                    "TD" -> CourseCategory.TD
+                    "Accueil" -> CourseCategory.ACCUEIL
+                    "Examens" -> CourseCategory.EXAMENS
+                    "Indisponibilité" -> CourseCategory.INDISPONIBILITE
+                    "Réunions" -> CourseCategory.REUNIONS
+                    "Manifestation" -> CourseCategory.MANIFESTATION
+                    "Projet encadré/Projet tutoré" -> CourseCategory.PROJET_ENCADRE_TUTORE
                     else -> CourseCategory.DEFAULT
                 }
 
