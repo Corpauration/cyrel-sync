@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "fr.corpauration"
-version = "1.1.3"
+version = "1.1.4"
 
 repositories {
     mavenCentral()
