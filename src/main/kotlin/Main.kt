@@ -1,3 +1,4 @@
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.metrics.micrometer.*
@@ -14,6 +15,7 @@ import org.quartz.SimpleScheduleBuilder.simpleSchedule
 import org.quartz.Trigger
 import org.quartz.TriggerBuilder.newTrigger
 import org.quartz.impl.StdSchedulerFactory
+import org.quartz.impl.matchers.GroupMatcher
 import java.util.*
 
 
@@ -90,6 +92,18 @@ fun main() {
                     PrometheusStats.updateCoursesNextFireTime(scheduler)
                     PrometheusStats.updateStudentsNextFireTime(scheduler)
                     call.respond(appMicrometerRegistry.scrape())
+                }
+                get("/run/students") {
+                    scheduler.getJobKeys(GroupMatcher.anyGroup()).filter { it.name == "update-students" }.forEach {
+                        scheduler.triggerJob(it)
+                    }
+                    call.respond(HttpStatusCode.OK)
+                }
+                get("/run/courses") {
+                    scheduler.getJobKeys(GroupMatcher.anyGroup()).filter { it.name == "update-courses" }.forEach {
+                        scheduler.triggerJob(it);
+                    }
+                    call.respond(HttpStatusCode.OK)
                 }
             }
         }.start(wait = false)
