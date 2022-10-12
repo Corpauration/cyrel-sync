@@ -66,6 +66,23 @@ fun main() {
 
         scheduler.scheduleJob(studentsJob, studentsTrigger)
 
+        val roomsJob: JobDetail = newJob(UpdateRoomsJob::class.java)
+            .withIdentity("update-rooms", "update-rooms")
+            .build()
+
+        val roomsTrigger: Trigger = newTrigger()
+            .withIdentity("update-rooms-trigger", "update-rooms")
+            .startNow()
+            .withSchedule(
+                simpleSchedule()
+                    .withIntervalInHours(2)
+                    .repeatForever()
+                    .withMisfireHandlingInstructionFireNow()
+            )
+            .build()
+
+        scheduler.scheduleJob(roomsJob, roomsTrigger)
+
         embeddedServer(Netty, port = 8080) {
             val appMicrometerRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
             appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.schedulerStatus)
@@ -78,6 +95,9 @@ fun main() {
             appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.coursesError)
             appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.studentsError)
             appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.coursesGroupsDuration)
+            appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.roomsNextFireTime)
+            appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.roomsDuration)
+            appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.roomsError)
             install(MicrometerMetrics) {
                 registry = appMicrometerRegistry
             }
@@ -101,6 +121,12 @@ fun main() {
                 }
                 get("/run/courses") {
                     scheduler.getJobKeys(GroupMatcher.anyGroup()).filter { it.name == "update-courses" }.forEach {
+                        scheduler.triggerJob(it);
+                    }
+                    call.respond(HttpStatusCode.OK)
+                }
+                get("/run/rooms") {
+                    scheduler.getJobKeys(GroupMatcher.anyGroup()).filter { it.name == "update-rooms" }.forEach {
                         scheduler.triggerJob(it);
                     }
                     call.respond(HttpStatusCode.OK)
