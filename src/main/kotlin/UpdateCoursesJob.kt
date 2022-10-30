@@ -36,6 +36,7 @@ class UpdateCoursesJob : Job {
                 }
             }
             LOG.info("Done!")
+            conn.close()
         } catch (e: Exception) {
             timer.observeDuration()
             PrometheusStats.coursesError.inc()

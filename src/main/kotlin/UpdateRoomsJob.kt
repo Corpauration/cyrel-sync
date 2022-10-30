@@ -43,6 +43,7 @@ class UpdateRoomsJob : Job {
             }
             conn.autoCommit = true
             LOG.info("Done!")
+            conn.close()
         } catch (e: Exception) {
             timer.observeDuration()
             PrometheusStats.roomsError.inc()

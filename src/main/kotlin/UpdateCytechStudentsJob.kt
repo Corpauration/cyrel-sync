@@ -48,6 +48,7 @@ class UpdateCytechStudentsJob : Job {
                 conn.setAutoCommit(true)
             }
             LOG.info("Done!")
+            conn.close()
         } catch (e: Exception) {
             timer.observeDuration()
             PrometheusStats.studentsError.inc()
