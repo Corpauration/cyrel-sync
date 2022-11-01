@@ -24,10 +24,10 @@ class UpdateRoomsJob : Job {
             LOG.info("Updating rooms availabilities...")
             try {
                 conn.autoCommit = false
-                conn.prepareStatement("DELETE FROM rooms_availabilities WHERE TRUE").executeUpdate()
+                conn.prepareStatement("DELETE FROM rooms_courses WHERE TRUE").executeUpdate()
                 conn.prepareStatement(
                     """
-                    INSERT INTO rooms_availabilities (id, ref)
+                    INSERT INTO rooms_courses (id, ref)
                     SELECT r.id, c.id FROM rooms AS r JOIN courses AS c ON c.rooms LIKE '%' || r.name || '%';
                 """
                 ).executeUpdate()
