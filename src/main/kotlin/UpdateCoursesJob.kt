@@ -148,10 +148,12 @@ class UpdateCoursesJob : Job {
 
                 "Matière" -> subject = element.content
                 "Salle" -> rooms = element.content.toString()
+                "Salles" -> rooms = element.content.toString()
                 "Enseignant" -> teachers = element.content.toString()
+                "Enseignants" -> teachers = element.content.toString()
                 null -> when (svElem.label) {
-                    "Salle" -> rooms += ",${element.content}"
-                    "Enseignant" -> teachers += ",${element.content}"
+                    "Salles" -> rooms += ",${element.content}"
+                    "Enseignants" -> teachers += ",${element.content}"
                 }
             }
         }
