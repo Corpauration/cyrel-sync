@@ -58,7 +58,7 @@ fun main() {
             .startNow()
             .withSchedule(
                 simpleSchedule()
-                    .withIntervalInHours(96)
+                    .withIntervalInHours(30 * 24)
                     .repeatForever()
                     .withMisfireHandlingInstructionFireNow()
             )
