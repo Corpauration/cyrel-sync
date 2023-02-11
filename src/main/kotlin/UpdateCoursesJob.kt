@@ -81,6 +81,13 @@ class UpdateCoursesJob : Job {
                 referent
             )
 
+            if (courses.isEmpty()) {
+                LOG.error("Courses is empty, canceling update now for group $group with referent id $referent")
+                timer.observeDuration()
+                PrometheusStats.coursesError.inc()
+                return
+            }
+
             conn.setAutoCommit(false)
 
             val st1 = conn.prepareStatement("DELETE FROM courses_groups WHERE ref = ?")
