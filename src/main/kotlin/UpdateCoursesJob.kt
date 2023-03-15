@@ -8,6 +8,7 @@ import org.quartz.JobExecutionContext
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.sql.*
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -66,6 +67,80 @@ class UpdateCoursesJob : Job {
         return list
     }
 
+    fun getDifferences(group: Int, courses: List<Course>) {
+        val now = LocalDateTime.now().withNano(0)
+        val sun = now.plusDays((DayOfWeek.SUNDAY.ordinal - now.dayOfWeek.ordinal).toLong())
+
+        val old = ArrayList<Course>()
+        val st = conn.prepareStatement(
+            """select c.* from courses as c
+        join courses_groups as gc on c.id = gc.id
+        where gc.ref = ? and c.start >= ? and c."end" <= ?"""
+        )
+        st.setInt(1, group)
+        st.setTimestamp(2, Timestamp.from(now.toInstant(ZoneOffset.UTC)))
+        st.setTimestamp(3, Timestamp.from(sun.toInstant(ZoneOffset.UTC)))
+        val rs = st.executeQuery()
+        while (rs.next()) {
+            old.add(
+                Course(
+                    rs.getString(1),
+                    rs.getTimestamp(2).toString(),
+                    rs.getTimestamp(3).toString(),
+                    false,
+                    "",
+                    "",
+                    "",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    0,
+                    0,
+                    null,
+                    null,
+                    null
+                )
+            )
+        }
+        rs.close()
+        st.close()
+
+        courses.filter {
+            LocalDateTime.parse(it.start) in now..sun
+        }.forEach { course ->
+            val equal = old.firstOrNull { course.id == it.id }
+            if (equal != null) {
+                if (course.start.replace("T", " ").plus(".0") != equal.start || course.end?.replace("T", " ")
+                        .plus(".0") != equal.end
+                ) {
+                    println("Course ${course.id} has changed: ${equal.start} -> ${course.start} && ${equal.end} -> ${course.end}")
+                    addCourseAlert(course.id, group, now, CourseAlertEvent.MODIFIED)
+                }
+            } else {
+                println("New course: ${course.id}")
+                addCourseAlert(course.id, group, now, CourseAlertEvent.ADDED)
+            }
+        }
+
+        var removedCount = 0
+
+        old.filter { !courses.map { it.id }.contains(it.id) }.forEach {
+            println("Removed course: ${it.id}")
+            removedCount++
+            addCourseAlert(it.id, group, now, CourseAlertEvent.DELETED)
+        }
+
+        if (removedCount != 0 && courses.filter {
+                LocalDateTime.parse(it.start) in now..sun
+            }.isEmpty()) {
+            println("All courses of the current week ($removedCount) were removed for group $group")
+            println("Aborting, this is not normal")
+            throw Exception("All courses of the week were deleted for group $group")
+        }
+    }
+
     suspend fun updateCourses(celcat: CyCelcat, group: Int, referent: Int) {
         val timer = PrometheusStats.coursesGroupsDuration.startTimer()
         LOG.info("Updating courses for group $group with referent id $referent")
@@ -90,11 +165,14 @@ class UpdateCoursesJob : Job {
 
             conn.setAutoCommit(false)
 
+            courses.map { updateEvent(celcat, it) }
+
+            getDifferences(group, courses)
+
             val st1 = conn.prepareStatement("DELETE FROM courses_groups WHERE ref = ?")
             st1.setInt(1, group)
             st1.executeUpdate()
 
-            courses.map { updateEvent(celcat, it) }
             courses.map {
                 val st2 = conn.prepareStatement("INSERT INTO courses_groups (id, ref) VALUES ( ?, ? )")
                 st2.setString(1, it.id)
@@ -200,6 +278,20 @@ class UpdateCoursesJob : Job {
         st.setString(5, subject)
         st.setString(6, rooms)
         st.setString(7, teachers)
+        st.executeUpdate()
+    }
+
+    fun addCourseAlert(courseId: String, groupId: Int, time: LocalDateTime, event: CourseAlertEvent) {
+        val st = conn.prepareStatement(
+            """
+            INSERT INTO courses_alerts (id, "group", time, event)
+            VALUES ( ?, ?, ?, ? );
+        """
+        )
+        st.setString(1, courseId)
+        st.setInt(2, groupId)
+        st.setTimestamp(3, Timestamp.from(time.toInstant(ZoneOffset.UTC)))
+        st.setInt(4, event.ordinal)
         st.executeUpdate()
     }
 }
