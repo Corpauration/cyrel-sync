@@ -7,6 +7,10 @@ specific department.
 It fetches schedules every 2 hours and users every 4 days.
 
 &nbsp;
+
+Copyright Corpauration, distribution and commercial use of this software and relative assets is prohibited.
+
+&nbsp;
 &nbsp;
 
 🧃
