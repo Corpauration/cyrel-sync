@@ -38,6 +38,14 @@ class PrometheusStats {
             .name("scheduler_rooms_duration").help("Duration of rooms task").register()
         val roomsError = Counter.build()
             .name("scheduler_rooms_errors").help("Total errors of rooms task.").register()
+        val cleanCourseAlertNextFireTime =
+            Gauge.build().name("scheduler_clean_course_alert_next_fire").help("When rooms task will be fired")
+                .register()
+        val cleanCourseAlertDuration = Histogram.build()
+            .exponentialBuckets(1.0, 1.5, 25)
+            .name("scheduler_clean_course_alert_duration").help("Duration of rooms task").register()
+        val cleanCourseAlertError = Counter.build()
+            .name("scheduler_clean_course_alert_errors").help("Total errors of rooms task.").register()
 
 
         private fun getStatus(scheduler: Scheduler): String {
@@ -78,6 +86,14 @@ class PrometheusStats {
         fun updateRoomsNextFireTime(scheduler: Scheduler) {
             scheduler.getTriggerKeys(GroupMatcher.anyGroup()).filter { it.name == "update-rooms-trigger" }.forEach {
                 roomsNextFireTime.set(
+                    scheduler.getTrigger(it).getFireTimeAfter(Date(System.currentTimeMillis() + 1000)).time.toDouble()
+                )
+            }
+        }
+
+        fun updateCleanCourseAlertNextFireTime(scheduler: Scheduler) {
+            scheduler.getTriggerKeys(GroupMatcher.anyGroup()).filter { it.name == "clean-course-trigger" }.forEach {
+                cleanCourseAlertNextFireTime.set(
                     scheduler.getTrigger(it).getFireTimeAfter(Date(System.currentTimeMillis() + 1000)).time.toDouble()
                 )
             }

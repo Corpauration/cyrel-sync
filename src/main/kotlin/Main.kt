@@ -7,12 +7,9 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.micrometer.prometheus.PrometheusConfig
 import io.micrometer.prometheus.PrometheusMeterRegistry
+import org.quartz.*
 import org.quartz.JobBuilder.newJob
-import org.quartz.JobDetail
-import org.quartz.Scheduler
-import org.quartz.SchedulerException
 import org.quartz.SimpleScheduleBuilder.simpleSchedule
-import org.quartz.Trigger
 import org.quartz.TriggerBuilder.newTrigger
 import org.quartz.impl.StdSchedulerFactory
 import org.quartz.impl.matchers.GroupMatcher
@@ -83,6 +80,21 @@ fun main() {
 
         scheduler.scheduleJob(roomsJob, roomsTrigger)
 
+        val cleanCourseAlertJob: JobDetail = newJob(CleanCourseAlertJob::class.java)
+            .withIdentity("clean-course-alert", "clean-course-alert")
+            .build()
+
+        val cleanCourseAlertTrigger: Trigger = newTrigger()
+            .withIdentity("clean-course-trigger", "clean-course-alert")
+            .startNow()
+            .withSchedule(
+                CronScheduleBuilder.weeklyOnDayAndHourAndMinute(DateBuilder.MONDAY, 0, 0)
+                    .withMisfireHandlingInstructionFireAndProceed()
+            )
+            .build()
+
+        scheduler.scheduleJob(cleanCourseAlertJob, cleanCourseAlertTrigger)
+
         embeddedServer(Netty, port = 8080) {
             val appMicrometerRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
             appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.schedulerStatus)
@@ -98,6 +110,9 @@ fun main() {
             appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.roomsNextFireTime)
             appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.roomsDuration)
             appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.roomsError)
+            appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.cleanCourseAlertNextFireTime)
+            appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.cleanCourseAlertDuration)
+            appMicrometerRegistry.prometheusRegistry.register(PrometheusStats.cleanCourseAlertError)
             install(MicrometerMetrics) {
                 registry = appMicrometerRegistry
             }
@@ -111,6 +126,8 @@ fun main() {
                     PrometheusStats.updateTotalRanJobs(scheduler)
                     PrometheusStats.updateCoursesNextFireTime(scheduler)
                     PrometheusStats.updateStudentsNextFireTime(scheduler)
+                    PrometheusStats.updateRoomsNextFireTime(scheduler)
+                    PrometheusStats.updateCleanCourseAlertNextFireTime(scheduler)
                     call.respond(appMicrometerRegistry.scrape())
                 }
                 get("/run/students") {
@@ -127,6 +144,12 @@ fun main() {
                 }
                 get("/run/rooms") {
                     scheduler.getJobKeys(GroupMatcher.anyGroup()).filter { it.name == "update-rooms" }.forEach {
+                        scheduler.triggerJob(it);
+                    }
+                    call.respond(HttpStatusCode.OK)
+                }
+                get("/run/clean/courses") {
+                    scheduler.getJobKeys(GroupMatcher.anyGroup()).filter { it.name == "clean-course-alert" }.forEach {
                         scheduler.triggerJob(it);
                     }
                     call.respond(HttpStatusCode.OK)
