@@ -231,7 +231,12 @@ class UpdateCoursesJob : Job {
                     else -> CourseCategory.DEFAULT
                 }
 
-                "Matière" -> subject = element.content
+                "Matière" -> subject = element.content.toString().run {
+                    val regex = """.*(\[\S+]$)""".toRegex()
+                    if (regex matches this) {
+                        regex.find(this)?.let { it.groups[1]?.let { it1 -> this.removeRange(it1.range) } }
+                    } else this
+                }
                 "Salle" -> rooms = element.content.toString()
                 "Salles" -> rooms = element.content.toString()
                 "Enseignant" -> teachers = element.content.toString()
