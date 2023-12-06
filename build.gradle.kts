@@ -1,8 +1,8 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.6.21"
-    kotlin("plugin.serialization") version "1.6.21"
+    kotlin("jvm") version "1.9.21"
+    kotlin("plugin.serialization") version "1.9.21"
 }
 
 group = "fr.corpauration"
@@ -19,15 +19,18 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
     implementation("org.quartz-scheduler:quartz:2.3.2")
     implementation(project(":cy-celcat"))
-    implementation("org.postgresql:postgresql:42.5.0")
+    implementation("org.postgresql:postgresql:42.5.1")
     implementation("org.slf4j:slf4j-jdk14:2.0.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
     implementation("io.prometheus:simpleclient:0.16.0")
     implementation("org.latencyutils:LatencyUtils:2.0.3")
-    implementation("io.ktor:ktor-server-core:2.1.1")
-    implementation("io.ktor:ktor-server-netty:2.1.1")
-    implementation("io.ktor:ktor-server-metrics-micrometer:2.1.1")
+    implementation("io.ktor:ktor-server-core:2.3.6")
+    implementation("io.ktor:ktor-server-netty:2.3.6")
+    implementation("io.ktor:ktor-server-auth:2.3.6")
+    implementation("io.ktor:ktor-server-metrics-micrometer:2.3.6")
     implementation("io.micrometer:micrometer-registry-prometheus:1.9.2")
+    implementation("io.ktor:ktor-server-auth-jvm:2.3.6")
+    implementation("io.ktor:ktor-server-core-jvm:2.3.6")
     testImplementation(kotlin("test"))
     implementation(kotlin("reflect"))
 }
