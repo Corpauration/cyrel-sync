@@ -1,5 +1,6 @@
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
 import io.ktor.server.engine.*
 import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.netty.*
@@ -116,43 +117,74 @@ fun main() {
             install(MicrometerMetrics) {
                 registry = appMicrometerRegistry
             }
+            authentication {
+                basic(name = "prometheus") {
+                    realm = "prometheus"
+                    validate { credentials ->
+                        if (credentials.name == System.getenv("CC_METRICS_PROMETHEUS_USER") && credentials.password == System.getenv(
+                                "CC_METRICS_PROMETHEUS_PASSWORD"
+                            )
+                        ) {
+                            UserIdPrincipal(credentials.name)
+                        } else {
+                            null
+                        }
+                    }
+                }
+
+                basic(name = "run") {
+                    realm = "run"
+                    validate { credentials ->
+                        if (credentials.name == System.getenv("RUN_USER") && credentials.password == System.getenv("RUN_PASSWORD")) {
+                            UserIdPrincipal(credentials.name)
+                        } else {
+                            null
+                        }
+                    }
+                }
+            }
             routing {
                 get("/") {
                     call.respondText("Hello, world!")
                 }
-                get("/metrics") {
-                    PrometheusStats.updateStatus(scheduler)
-                    PrometheusStats.updateActiveJobs(scheduler)
-                    PrometheusStats.updateTotalRanJobs(scheduler)
-                    PrometheusStats.updateCoursesNextFireTime(scheduler)
-                    PrometheusStats.updateStudentsNextFireTime(scheduler)
-                    PrometheusStats.updateRoomsNextFireTime(scheduler)
-                    PrometheusStats.updateCleanCourseAlertNextFireTime(scheduler)
-                    call.respond(appMicrometerRegistry.scrape())
-                }
-                get("/run/students") {
-                    scheduler.getJobKeys(GroupMatcher.anyGroup()).filter { it.name == "update-students" }.forEach {
-                        scheduler.triggerJob(it)
+                authenticate("prometheus") {
+                    get("/metrics") {
+                        PrometheusStats.updateStatus(scheduler)
+                        PrometheusStats.updateActiveJobs(scheduler)
+                        PrometheusStats.updateTotalRanJobs(scheduler)
+                        PrometheusStats.updateCoursesNextFireTime(scheduler)
+                        PrometheusStats.updateStudentsNextFireTime(scheduler)
+                        PrometheusStats.updateRoomsNextFireTime(scheduler)
+                        PrometheusStats.updateCleanCourseAlertNextFireTime(scheduler)
+                        call.respond(appMicrometerRegistry.scrape())
                     }
-                    call.respond(HttpStatusCode.OK)
                 }
-                get("/run/courses") {
-                    scheduler.getJobKeys(GroupMatcher.anyGroup()).filter { it.name == "update-courses" }.forEach {
-                        scheduler.triggerJob(it);
+                authenticate("run") {
+                    get("/run/students") {
+                        scheduler.getJobKeys(GroupMatcher.anyGroup()).filter { it.name == "update-students" }.forEach {
+                            scheduler.triggerJob(it)
+                        }
+                        call.respond(HttpStatusCode.OK)
                     }
-                    call.respond(HttpStatusCode.OK)
-                }
-                get("/run/rooms") {
-                    scheduler.getJobKeys(GroupMatcher.anyGroup()).filter { it.name == "update-rooms" }.forEach {
-                        scheduler.triggerJob(it);
+                    get("/run/courses") {
+                        scheduler.getJobKeys(GroupMatcher.anyGroup()).filter { it.name == "update-courses" }.forEach {
+                            scheduler.triggerJob(it);
+                        }
+                        call.respond(HttpStatusCode.OK)
                     }
-                    call.respond(HttpStatusCode.OK)
-                }
-                get("/run/clean/courses") {
-                    scheduler.getJobKeys(GroupMatcher.anyGroup()).filter { it.name == "clean-course-alert" }.forEach {
-                        scheduler.triggerJob(it);
+                    get("/run/rooms") {
+                        scheduler.getJobKeys(GroupMatcher.anyGroup()).filter { it.name == "update-rooms" }.forEach {
+                            scheduler.triggerJob(it);
+                        }
+                        call.respond(HttpStatusCode.OK)
                     }
-                    call.respond(HttpStatusCode.OK)
+                    get("/run/clean/courses") {
+                        scheduler.getJobKeys(GroupMatcher.anyGroup()).filter { it.name == "clean-course-alert" }
+                            .forEach {
+                                scheduler.triggerJob(it);
+                            }
+                        call.respond(HttpStatusCode.OK)
+                    }
                 }
             }
         }.start(wait = false)
